@@ -1,0 +1,11 @@
+[package]
+name = "confsync"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.97"
+clap = { version = "4.5.32", features = ["derive"] }
+directories = "6.0.0"
+git2 = "0.20.1"
+serde = "1.0.219"
