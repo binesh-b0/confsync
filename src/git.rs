@@ -100,12 +100,33 @@ pub fn init_repo(repo_url: Option<&str>) -> Result<(), String> {
 /// All the git commands are parsed from the input
 /// and the output is returned as a string
 pub fn git_command(args: &[&str]) -> Result<String,String> {
+    // Check if git is installed
+    if !is_git_installed() {
+        return Err("Git is not installed".into());
+    }
+    // Check if the command is valid
+    if args.is_empty() {
+        return Err("No git command provided".into());
+    }
+    // the git commands should be excecuted in the project directory
+    let project_dirs = ProjectDirs::from("","","confsync")
+        .ok_or("Failed to get project directories")?;
+    let repo_path = project_dirs.data_dir().join("repo");
+    if !repo_path.exists() {
+        return Err("Repository does not exist".into());
+    }
+    // Execute the git command
     let output = Command::new("git")
         .args(args)
+        .current_dir(&repo_path)
         .output()
         .map_err(|e| format!("Failed to execute git command: {}", e))?;
-    if !output.status.success(){
-        return Err(format!("Git command failed: {}", String::from_utf8_lossy(&output.stderr)));
+    // Check if the command was successful
+    if !output.status.success() {
+        return Err(format!(
+            "Git command failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
     }
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }

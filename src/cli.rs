@@ -131,8 +131,6 @@ pub enum Commands {
     },
 
     /// Delete the local and/or remote repository or the configuration file
-    /// WARNING: This operation cannot be undone.
-    /// Must use the '--force' flag to confirm deletion.
     Delete {
         #[command(subcommand)]
         target: DeleteTarget,
@@ -161,6 +159,12 @@ pub enum DeleteTarget {
     },
     /// Delete the remote repository
     Remote {
+        /// Confirm deletion operation. ( only deletes main branch ) ** There is no undo! **
+        #[arg(long, required = true)]
+        force: bool,
+    },
+    /// Delete everything
+    All {
         /// Confirm deletion operation. ** There is no undo! **
         #[arg(long, required = true)]
         force: bool,

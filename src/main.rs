@@ -103,17 +103,41 @@ fn main(){
                         if let Err(e) = git::delete_repo(false, true) {
                             eprintln!("Error deleting remote repo: {}", e);
                         } else {
-                            println!("Remote repository deleted.😔");
+                            println!("Remote repository deleted.");
                         }
                     } else {
                         println!("Use --force to delete.");
                     }
                 },
+                DeleteTarget::All { force } => {
+                    if force {
+                        if let Err(e) = git::delete_repo(true, true) {
+                            eprintln!("Error deleting all repos: {}", e);
+                        } else {
+                            println!("All repositories deleted.");
+                        }
+                        if let Err(e) = delete_config() {
+                            eprintln!("Error deleting config: {}", e);
+                        } else {
+                            println!("confsync config deleted.");
+                            
+                        }
+                    } else {
+                        println!("Use --force to delete.");
+                    }
+                }
 
             }
            
            
         },
+        cli::Commands::Git { args } => {
+            // Forward the git command to the git CLI
+            match git::git_command(&args.iter().map(String::as_str).collect::<Vec<&str>>()) {
+                Ok(output) => println!("{}", output),
+                Err(e) => eprintln!("Error executing git command: {}", e),
+            }
+        }
         _ => {
             println!("other command");
         }
