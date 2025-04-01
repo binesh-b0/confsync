@@ -4,13 +4,14 @@ mod cli;
 mod config;
 mod git;
 
-use cli::{Cli, DeleteTarget};
+use cli::{Cli, ConfigCommands, DeleteTarget};
 use config::{
     check_config_exists,
     default_config_path,
     delete_config, 
     load_config, 
-    save_config, 
+    save_config,
+    view_config, 
     Config
 };
 
@@ -131,6 +132,29 @@ fn main(){
            
            
         },
+        cli::Commands::Config { command } => {
+            match command {
+                ConfigCommands::Show => {
+                    match view_config(false) {
+                        Ok(config) => {
+                            println!("Config: {:#?}", config);
+                        }
+                        Err(e) => {
+                            eprintln!("Error viewing config: {}", e);
+                        }
+                    }
+                },
+                // pipe the config into a text editor
+                ConfigCommands::Edit => {
+                    match view_config(true) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            eprintln!("Error editing config: {}", e);
+                        }
+                    }
+                },
+            }
+        }
         cli::Commands::Git { args } => {
             // Forward the git command to the git CLI
             match git::git_command(&args.iter().map(String::as_str).collect::<Vec<&str>>()) {

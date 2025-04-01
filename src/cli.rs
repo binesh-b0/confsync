@@ -194,8 +194,4 @@ pub enum ConfigCommands {
     Show,
     /// Edit the config file
     Edit,
-    /// Reset the config file
-    Reset,
-    Validate,
-    Path,
 }

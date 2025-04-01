@@ -127,3 +127,38 @@ pub fn delete_config() -> Result<(), String> {
 
     Ok(())
 }
+
+/// View/edit the config file or pipe it into a text editor.
+/// editor and pager are determined by the EDITOR and PAGER environment variables.
+pub fn view_config(edit: bool) -> Result<(), String> {
+    let path = match default_config_path() {
+        Some(p) => p,
+        None => return Err("Could not determine config path".into()),
+    };
+
+    if !path.exists() {
+        return Err("Config file does not exist".into());
+    }
+
+    if edit {
+        // Open the config file in the default editor
+        let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
+        std::process::Command::new(editor)
+            .arg(path)
+            .spawn()
+            .map_err(|e| format!("Failed to open config file in editor: {}", e))?;
+    } else {
+        // show the config file in a pager
+        use std::process::Stdio;
+        let pager = std::env::var("PAGER").unwrap_or_else(|_| "less".to_string());
+        std::process::Command::new(pager)
+            .arg(path)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .map_err(|e| format!("Failed to open config file in pager: {}", e))?;
+    }
+
+    Ok(())
+}
