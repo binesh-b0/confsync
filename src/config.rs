@@ -1,5 +1,6 @@
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -20,35 +21,29 @@ pub struct Storage {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tracking {
-    pub files: Vec<FileMapping>,
+    #[serde(rename = "files")]
+    pub file_map: HashMap<String, PathBuf>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct FileMapping {
-    pub src: String,
-    pub alias: Option<String>,
-}
 
 impl Default for Config {
     fn default() -> Self {
-        let config_path = default_config_path()
-            .unwrap_or_else(|| PathBuf::from("config.toml"));
         Self {
             storage: Storage {
                 local: true,
-                repo_url: "".to_string(),
+                repo_url: String::new(),
             },
             tracking: Tracking {
-                files: vec![
-                    FileMapping {
-                        src: config_path.to_string_lossy().to_string(),
-                        alias: Some("confsync".to_string()),
-                    }
-                ],
+                file_map: HashMap::from_iter([(
+                    "confsync".to_string(),
+                    default_config_path()
+                        .unwrap_or_else(|| PathBuf::from("config.toml"))
+                )]),
             },
         }
     }
 }
+
 
 /// Get path to the user's config file
 pub fn default_config_path() -> Option<PathBuf> {
