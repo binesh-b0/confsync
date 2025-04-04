@@ -25,7 +25,6 @@ pub struct Tracking {
     pub file_map: HashMap<String, PathBuf>,
 }
 
-
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -36,30 +35,26 @@ impl Default for Config {
             tracking: Tracking {
                 file_map: HashMap::from_iter([(
                     "confsync".to_string(),
-                    default_config_path()
-                        .unwrap_or_else(|| PathBuf::from("config.toml"))
+                    default_config_path().unwrap_or_else(|| PathBuf::from("config.toml")),
                 )]),
             },
         }
     }
 }
 
-
 /// Get path to the user's config file
 pub fn default_config_path() -> Option<PathBuf> {
     if let Some(proj_dirs) = ProjectDirs::from("", "", "confsync") {
         let conf_dir = proj_dirs.config_dir();
         Some(conf_dir.join("config.toml"))
-    }
-    else {
+    } else {
         None
     }
 }
 
 /// Check if the config file exists : returns true if it does
 pub fn check_config_exists() -> bool {
-    default_config_path()
-        .map_or(false,|path| path.is_file())
+    default_config_path().map_or(false, |path| path.is_file())
 }
 
 /// Load the config file if it exists, or return a default
@@ -84,8 +79,7 @@ pub fn load_config() -> Result<Config, String> {
 }
 
 /// Write the current config to the default config path,
-/// creating the directory if it doesn't exist
-pub fn save_config(config: &Config) -> Result<(),String> {
+pub fn save_config(config: &Config) -> Result<(), String> {
     let path = match default_config_path() {
         Some(p) => p,
         None => return Err("Could not determine config path".into()),
@@ -94,14 +88,13 @@ pub fn save_config(config: &Config) -> Result<(),String> {
     // Ensure the directory exists
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-        .map_err(|e| format!("Failed to create config directory: {}", e))?;
+            .map_err(|e| format!("Failed to create config directory: {}", e))?;
     }
 
-    let toml_string = toml::to_string_pretty(config)
-        .map_err(|e| format!("Failed to serialize config :{e}"))?;
+    let toml_string =
+        toml::to_string_pretty(config).map_err(|e| format!("Failed to serialize config :{e}"))?;
 
-    fs::write(&path, toml_string)
-        .map_err(|e| format!("Failed to write config file: {}", e))?;
+    fs::write(&path, toml_string).map_err(|e| format!("Failed to write config file: {}", e))?;
 
     Ok(())
 }
@@ -114,8 +107,7 @@ pub fn delete_config() -> Result<(), String> {
     };
 
     if path.exists() {
-        fs::remove_file(&path)
-            .map_err(|e| format!("Failed to delete config file: {}", e))?;
+        fs::remove_file(&path).map_err(|e| format!("Failed to delete config file: {}", e))?;
     } else {
         return Err("Config file does not exist".into());
     }
@@ -124,7 +116,6 @@ pub fn delete_config() -> Result<(), String> {
 }
 
 /// View/edit the config file or pipe it into a text editor.
-/// editor and pager are determined by the EDITOR and PAGER environment variables.
 pub fn view_config(edit: bool) -> Result<(), String> {
     let path = match default_config_path() {
         Some(p) => p,
@@ -136,7 +127,7 @@ pub fn view_config(edit: bool) -> Result<(), String> {
     }
 
     if edit {
-        // Open the config file in the default editor
+        // Open the config file in the nano or the one specified in EDITOR (env var)
         let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
         std::process::Command::new(editor)
             .arg(path)
@@ -155,5 +146,43 @@ pub fn view_config(edit: bool) -> Result<(), String> {
             .map_err(|e| format!("Failed to open config file in pager: {}", e))?;
     }
 
+    Ok(())
+}
+
+/// Add a file to the tracking list
+pub fn add_tracking_file(path: PathBuf, name: String) -> Result<(), String> {
+
+    let mut config = load_config()?;
+    
+    // get absolute path
+    let abs_path: PathBuf =
+        fs::canonicalize(&path).map_err(|e| format!("Failed to get absolute path: {}", e))?;
+    if !abs_path.exists() {
+        return Err("File does not exist".into());
+    }
+    if !abs_path.is_file() {
+        return Err("Path is not a file".into());
+    }    
+
+    if config
+        .tracking
+        .file_map
+        .values()
+        .any(|v| v == &abs_path)
+    {
+        return Err("Already Tracked with different name".into());
+    }
+    if config
+        .tracking
+        .file_map
+        .contains_key(name.as_str())
+    {
+        return Err("Already Tracked".into());
+    }
+
+    
+    config.tracking.file_map.insert(name, abs_path);
+    save_config(&config)?;
+    
     Ok(())
 }

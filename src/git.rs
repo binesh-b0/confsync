@@ -11,7 +11,7 @@ pub fn init_repo(repo_url: Option<&str>) -> Result<(), String> {
     // Determine the backup directory
     let project_dirs = ProjectDirs::from("","","confsync")
         .ok_or("Failed to get project directories")?;
-    let repo_path = project_dirs.data_dir().join("repo");
+    let repo_path = project_dirs.data_dir().join("default");
     println!("Backup directory: {}", repo_path.display());
     // Create the backup directory if it doesn't exist
     if !repo_path.exists() {

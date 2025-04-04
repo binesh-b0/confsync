@@ -11,17 +11,11 @@ pub struct Cli {
     #[arg(short, long, global = true)]
     pub verbose: bool,
 
-    /// Path to the config file
-    #[arg(short, long, global = true)]
-    pub config_path: Option<String>,
-
-    #[arg(short, long, global = true)]
-    pub profile: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Initialize a new repository
+    /// Initialize confsync with new repository
     Init {
         /// URL of the remote repository 
         repo_url: Option<String>,
@@ -37,21 +31,19 @@ pub enum Commands {
 
     /// Track a configuration file for backup
     Add {
+        /// Unique name / alias for the configuration file
+        name:String,
+        /// Path to the configuration file to track
         path: String,
-        /// Alias for the configuration file
-        #[arg(long)]
-        alias: Option<String>,
-        /// Encrypt the configuration file (Phase 2)
-        #[arg(long)]
-        encrypt: bool,
     },
 
     /// Untrack a configuration file
     Remove {
-        /// Path to the configuration file for untracking
-        path: String,
-        /// Untrack configuration file via alias
-        #[arg(long)]
+        /// Untrack file in path
+        #[arg(required_unless_present = "alias")]
+        path: Option<String>,
+        /// Untrack name
+        #[arg(required_unless_present = "path")]
         alias: Option<String>,
     },
 

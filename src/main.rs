@@ -1,8 +1,11 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 
 mod cli;
 mod config;
 mod git;
+mod ops;
 
 use cli::{Cli, ConfigCommands, DeleteTarget};
 use config::{
@@ -12,8 +15,10 @@ use config::{
     load_config, 
     save_config,
     view_config, 
+    add_tracking_file,
     Config
 };
+use ops::copy_file_to_repo;
 
 
 fn main(){
@@ -67,11 +72,37 @@ fn main(){
                 }
             }
         },
-        cli::Commands::Add { path,alias, encrypt } => {
-            println!("add command");
-            println!("path: {}", path);
-            println!("alias: {:?}", alias);
-            println!("encrypt: {}", encrypt);
+        cli::Commands::Add { path,name } => {
+            // check if config file exists
+            if !check_config_exists() {
+                println!(" Please run `confsync init` to initialize.");
+                return;
+            }
+            // path to PathBuf
+            let path = match PathBuf::from(path).canonicalize() {
+                Ok(p) => p,
+                Err(e) => {
+                    eprintln!("Error resolving path: {}", e);
+                    return;
+                }
+            };
+
+            // add to tracking
+            match add_tracking_file(path.clone(),name.clone()) {
+                Ok(()) => {
+                    println!("Added {} to tracking as {}", path.display(), name);
+                    // copy the file to the repo
+                    if let Err(e) = copy_file_to_repo(path, name.as_str(),"default") {
+                        eprintln!("Error copying file to repo: {}", e);
+                        return;
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error adding tracking: {}", e);
+                    return;
+                }
+            }
+            
         },
         cli::Commands::Delete { target } => {
             match target {
