@@ -1,5 +1,5 @@
 use directories::ProjectDirs;
-use std::{fs, path::PathBuf};
+use std::{fs, io::{Read, Write}, path::PathBuf};
 
 // Copy tracked file
 pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(), String> {
@@ -21,7 +21,36 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(),
     }
     println!("Copying {} to {}", src.display(), dest.display());
 
-    std::fs::copy(src, dest)
-        .map(|_| ())
-        .map_err(|e| format!("Failed to copy file: {}", e))
+    let file_size = fs::metadata(&src)
+        .map_err(|e| format!("Failed to get file metadata: {}", e))?
+        .len();
+
+    let mut src_file = fs::File::open(&src)
+        .map_err(|e| format!("Failed to open source file: {}", e))?;
+    let mut dest_file = fs::File::create(&dest)
+        .map_err(|e| format!("Failed to create destination file: {}", e))?;
+
+    let mut buffer = [0u8; 8192];
+    let mut copied: u64 = 0;
+
+    loop {
+        let bytes_read = src_file
+            .read(&mut buffer)
+            .map_err(|e| format!("Failed to read from source file: {}", e))?;
+        if bytes_read == 0 {
+            break;
+        }
+
+        dest_file
+            .write_all(&buffer[..bytes_read])
+            .map_err(|e| format!("Failed to write to destination file: {}", e))?;
+
+        copied += bytes_read as u64;
+        println!(
+            "Progress: {:.2}%",
+            (copied as f64 / file_size as f64) * 100.0
+        );
+    }
+
+    Ok(())
 }
