@@ -1,104 +1,44 @@
 use directories::ProjectDirs;
-use std::path::Path;
 use std::fs;
 use std::process::Command;
-use git2::{BranchType, Cred, PushOptions, RemoteCallbacks, Repository, Signature};
+use git2::Repository;
 
 /// Initialize a new git repository
-/// If 'repo_url' is provided, it will set the remote origin,
-/// else it will create a local repository (local = true).
-pub fn init_repo(repo_url: Option<&str>) -> Result<(), String> {
-    // Determine the backup directory
-    let project_dirs = ProjectDirs::from("","","confsync")
-        .ok_or("Failed to get project directories")?;
-    let repo_path = project_dirs.data_dir().join("default");
-    println!("Backup directory: {}", repo_path.display());
-    // Create the backup directory if it doesn't exist
-    if !repo_path.exists() {
-        fs::create_dir_all(&repo_path)
-            .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+pub fn init_repo(profile: &str, repo_url: Option<&str>) -> Result<(), String> {
+    let project_dirs = ProjectDirs::from("", "", "confsync")
+        .ok_or("Failed to find config directory")?;
+    
+    let repo_path = project_dirs.data_dir().join(profile);
+    
+    // Create parent directories if needed
+    fs::create_dir_all(repo_path.clone())
+        .map_err(|e| format!("Failed to create directory: {}", e))?;
+
+    // Initialize repo with default branch "main"
+    let mut opts = git2::RepositoryInitOptions::new();
+    opts.initial_head("main");
+    let repo = Repository::init_opts(repo_path.clone(), &opts)
+        .map_err(|e| format!("Repo init failed: {}", e))?;
+
+    
+    // Set to prefer rebase on pull
+    {
+        let mut config = repo.config().map_err(|e| format!("Failed to get config: {}", e))?;
+        config.set_bool("pull.rebase", true)
+            .map_err(|e| format!("Failed to set pull.rebase configuration: {}", e))?;
     }
-
-    // Check if a git repository already exists
-    if repo_path.join(".git").exists() {
-        return Err("Repository already exists".into());
-    } 
-    // Initialize a new repository.
-    let repo = Repository::init(&repo_path)
-        .map_err(|e| format!("Failed to initialize repository: {}", e))?;
-    println!("Initialized empty Git repository in {}", repo_path.display());
-    // Write the repository index into a tree.
-    let tree_id = {
-        let mut index = repo
-            .index()
-            .map_err(|e| format!("Failed to get repository index: {}", e))?;
-        index.write_tree().map_err(|e| format!("Failed to write tree: {}", e))?
-    };
-
-    let tree = repo
-        .find_tree(tree_id)
-        .map_err(|e| format!("Failed to find tree: {}", e))?;
-
-    // Create a signature for the commit.
-    let email = match git_command(&["config", "user.email"]) {
-        Ok(email) if !email.trim().is_empty() => email.trim().to_owned(),
-        _ => "confsync".to_owned(),
-    };
-    let author = match git_command(&["config", "user.name"]) {
-        Ok(name) if !name.trim().is_empty() => name.trim().to_owned(),
-        _ => "confsync".to_owned(),
-    };
-    let sig = Signature::now(&author, &email)
-        .map_err(|e| format!("Failed to create signature: {}", e))?;
-    println!("Using signature {} <{}>", author, email);
-
-    // Create an initial commit on HEAD (with no parents).
-    let commit_id = repo
-        .commit(Some("HEAD"), &sig, &sig, "Initial commit", &tree, &[])
-        .map_err(|e| format!("Failed to create initial commit: {}", e))?;
-
-    // Retrieve the commit object.
-    let commit = repo
-        .find_commit(commit_id)
-        .map_err(|e| format!("Failed to find commit: {}", e))?;
-
-    // If branch "main" does not exist, create it.
-    if repo.find_branch("main", BranchType::Local).is_err() {
-        repo.branch("main", &commit, false)
-            .map_err(|e| format!("Failed to create 'main' branch: {}", e))?;
-    }
-    // Set HEAD to branch "main".
-    repo.set_head("refs/heads/main")
-        .map_err(|e| format!("Failed to set HEAD to 'main': {}", e))?;
-
-    // If a repository URL is provided, set it as the remote origin and push the initial commit.
+    
+    // Set remote if provided
     if let Some(url) = repo_url {
         repo.remote("origin", url)
-            .map_err(|e| format!("Failed to add remote origin: {}", e))?;
-        // Set up callbacks for authentication, if needed.
-        let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(|_url, username_from_url, _| {
-            // Use default credential helper.
-            Cred::credential_helper(&repo.config().unwrap(), _url, username_from_url)
-        });
-
-        let mut push_options = PushOptions::new();
-        push_options.remote_callbacks(callbacks);
-
-        let mut remote = repo
-            .find_remote("origin")
-            .map_err(|e| format!("Failed to find remote 'origin': {}", e))?;
-        remote
-            .push(&["refs/heads/main:refs/heads/main"], Some(&mut push_options))
-            .map_err(|e| format!("Failed to push to remote repository: {}", e))?;
+            .map_err(|e| format!("Failed to set remote: {}", e))?;
     }
 
+    println!("Initialized repository at: {}", repo_path.display());
     Ok(())
 }
 
-/// Forward the git command to the git CLI
-/// All the git commands are parsed from the input
-/// and the output is returned as a string
+/// Forward the git commands to the git CLI
 pub fn git_command(args: &[&str]) -> Result<String,String> {
     // Check if git is installed
     if !is_git_installed() {
@@ -141,18 +81,48 @@ pub fn is_git_installed() -> bool {
         .unwrap_or(false)
 }
 
+/// Commit and push 
+pub fn commit_and_push(profile: &str, message: &str, push: bool) -> Result<(), String> {
+    let project_dirs = ProjectDirs::from("", "", "confsync")
+        .ok_or("Failed to find config directory")?;
+    
+    let repo_path = project_dirs.data_dir().join(profile);
+    
+    // Check if the repository exists
+    if !repo_path.exists() {
+        return Err("Repository does not exist".into());
+    }
+    
+    // Commit changes
+    let output = git_command(&["commit", "-m", message])?;
+    println!("Commit output: {}", output);
+    
+    // Push changes if requested
+    if push {
+        let output = git_command(&["push"])?;
+        println!("Push output: {}", output);
+    }
+    
+    Ok(())
+}
+
 /// Delete the local and/or remote repository
-pub fn delete_repo(local: bool, remote: bool) -> Result<(), String> {
+pub fn delete_repo(local: bool, remote: bool,profile: &str) -> Result<(), String> {
+    let project_dirs = ProjectDirs::from("", "", "confsync")
+    .ok_or("Failed to find config directory")?;
+
+    let repo_path = project_dirs.data_dir().join(profile);
+
+    // Check if the repository exists
+    if !repo_path.exists() {
+        return Err("Repository does not exist".into());
+    }
     if local {
         // Delete the local repository
-        if Path::new(".git").exists() {
-            std::fs::remove_dir_all(".git")
-                .map_err(|e| format!("Failed to delete local repository: {}", e))?;
-        } else {
-            return Err("Local repository does not exist".into());
-        }
+        fs::remove_dir_all(&repo_path)
+            .map_err(|e| format!("Failed to delete: {}", e))?;
+        println!("Local repository deleted: {}", repo_path.display());
     }
-
     if remote {
         // Delete the remote repository
         let output = git_command(&["push", "--delete", "origin", "main"])?;

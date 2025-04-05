@@ -57,7 +57,7 @@ fn main(){
             } else {
                 None
             };
-            match git::init_repo(remote_url) {
+            match git::init_repo("default",remote_url) {
                 Ok(_) => {
                     println!("Git initialized");
                     println!("Welcome to confSync! \n\
@@ -121,7 +121,7 @@ fn main(){
                 },
                 DeleteTarget::Local { force } => {
                     if force {
-                        if let Err(e) = git::delete_repo(true, false) {
+                        if let Err(e) = git::delete_repo(true, false,"default") {
                             eprintln!("Error deleting local repo: {}", e);
                         } else {
                             println!("Local repository deleted.😔");
@@ -132,7 +132,7 @@ fn main(){
                 },
                 DeleteTarget::Remote { force } => {
                     if force {
-                        if let Err(e) = git::delete_repo(false, true) {
+                        if let Err(e) = git::delete_repo(false, true,"default") {
                             eprintln!("Error deleting remote repo: {}", e);
                         } else {
                             println!("Remote repository deleted.");
@@ -143,7 +143,7 @@ fn main(){
                 },
                 DeleteTarget::All { force } => {
                     if force {
-                        if let Err(e) = git::delete_repo(true, true) {
+                        if let Err(e) = git::delete_repo(true, true,"default") {
                             eprintln!("Error deleting all repos: {}", e);
                         } else {
                             println!("All repositories deleted.");

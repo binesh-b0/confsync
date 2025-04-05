@@ -54,3 +54,21 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(),
 
     Ok(())
 }
+
+// write to log
+pub fn write_log(action: &str, alias: &str, profile: &str) -> Result<(), String> {
+    let project_dirs =
+        ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");
+    let log_path = project_dirs.data_dir().join(profile).join("log.txt");
+
+    let mut log_file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(log_path)
+        .map_err(|e| format!("Failed to open log file: {}", e))?;
+
+    writeln!(log_file, "{}: {}", action, alias)
+        .map_err(|e| format!("Failed to write to log file: {}", e))?;
+
+    Ok(())
+}

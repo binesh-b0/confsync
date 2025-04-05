@@ -7,9 +7,15 @@ use clap::{Parser, Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
-
+    /// Verbose output
     #[arg(short, long, global = true)]
     pub verbose: bool,
+    /// Hide warnings and errors
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+    /// Set profile [default] 
+    #[arg(short, long, global = true)]
+    pub profile: Option<String>,
 
 }
 
@@ -49,6 +55,9 @@ pub enum Commands {
 
     /// Commit changes and push to the repo 
     Backup {
+        /// file to be backed up. [default: all]
+        alias: Option<String>,
+
         /// Custom commit message
         #[arg(short, long)]
         message: Option<String>,
@@ -74,9 +83,9 @@ pub enum Commands {
         #[arg(short, long)]
         dry_run: bool,
 
-        /// Overwrite local files
+        /// Overwrite if file exists
         #[arg(short, long)]
-        force: bool,
+        overwrite: bool,
     },
 
     /// Show backup history
@@ -101,12 +110,6 @@ pub enum Commands {
     Profile {
         #[command(subcommand)]
         command: ProfileCommands,
-    },
-
-    /// Manage encryption keys (Phase 2)
-    Encrypt {
-        #[command(subcommand)]
-        command: EncryptCommands,
     },
 
     /// View and edit the confSync settings
@@ -170,14 +173,6 @@ pub enum ProfileCommands {
     Switch { name: String },
     Delete { name: String, #[arg(long)] force: bool },
     Rename { old_name: String, new_name: String },
-}
-
-#[derive(Subcommand, Debug)]
-pub enum EncryptCommands {
-    Init,
-    AddKey { pubkey_path: String },
-    Rotate,
-    Remove { path: String },
 }
 
 #[derive(Subcommand, Debug)]
