@@ -1,7 +1,11 @@
+
 use directories::ProjectDirs;
 use std::fs;
 use std::process::Command;
 use git2::Repository;
+
+use crate::ops::write_log;
+
 
 /// Initialize a new git repository
 pub fn init_repo(profile: &str, repo_url: Option<&str>) -> Result<(), String> {
@@ -33,7 +37,7 @@ pub fn init_repo(profile: &str, repo_url: Option<&str>) -> Result<(), String> {
         repo.remote("origin", url)
             .map_err(|e| format!("Failed to set remote: {}", e))?;
     }
-
+    write_log("info", "INIT", "Initialized repo", None).unwrap();
     println!("Initialized repository at: {}", repo_path.display());
     Ok(())
 }

@@ -19,7 +19,7 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(),
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {}", e))?;
     }
-    println!("Copying {} to {}", src.display(), dest.display());
+    write_log("info", "COPY", &format!("Copying {} to {}", src.display(), dest.display()), Some(profile.to_string()))?;
 
     let file_size = fs::metadata(&src)
         .map_err(|e| format!("Failed to get file metadata: {}", e))?
@@ -55,20 +55,35 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(),
     Ok(())
 }
 
-// write to log
-pub fn write_log(action: &str, alias: &str, profile: &str) -> Result<(), String> {
+/// write to log file
+pub fn write_log(
+    log_type: &str,
+    action: &str,
+    message: &str,
+    profile: Option<String>,
+) -> Result<(), String> {
+    let profile_str = profile.as_deref().unwrap_or("default");
+
     let project_dirs =
         ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");
-    let log_path = project_dirs.data_dir().join(profile).join("log.txt");
+    let log_path = project_dirs
+        .data_dir()
+        .join(profile_str)
+        .join("log.txt");
 
-    let mut log_file = fs::OpenOptions::new()
+    let mut file = fs::OpenOptions::new()
         .append(true)
         .create(true)
         .open(log_path)
         .map_err(|e| format!("Failed to open log file: {}", e))?;
 
-    writeln!(log_file, "{}: {}", action, alias)
-        .map_err(|e| format!("Failed to write to log file: {}", e))?;
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    writeln!(
+        file,
+        "[{} | {}] {} => {}: {}",
+        timestamp, profile_str, log_type, action, message
+    )
+    .map_err(|e| format!("Failed to write to log file: {}", e))?;
 
     Ok(())
 }

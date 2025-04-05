@@ -17,6 +17,9 @@ pub struct Storage {
 
     /// if not local, stores the remote repo url
     pub repo_url: String,
+
+    /// optional profile name
+    pub profile: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,6 +34,7 @@ impl Default for Config {
             storage: Storage {
                 local: true,
                 repo_url: String::new(),
+                profile: Some(String::from("default")),
             },
             tracking: Tracking {
                 file_map: HashMap::from_iter([(
