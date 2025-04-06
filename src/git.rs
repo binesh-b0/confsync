@@ -55,7 +55,7 @@ pub fn git_command(args: &[&str]) -> Result<String,String> {
     // the git commands should be excecuted in the project directory
     let project_dirs = ProjectDirs::from("","","confsync")
         .ok_or("Failed to get project directories")?;
-    let repo_path = project_dirs.data_dir().join("repo");
+    let repo_path = project_dirs.data_dir().join("default");
     if !repo_path.exists() {
         return Err("Repository does not exist".into());
     }
@@ -72,6 +72,7 @@ pub fn git_command(args: &[&str]) -> Result<String,String> {
             String::from_utf8_lossy(&output.stderr)
         ));
     }
+    write_log("info", "GIT", &format!("Git command: {:?}", args), None).unwrap();
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
@@ -91,20 +92,27 @@ pub fn commit_and_push(profile: &str, message: &str, push: bool) -> Result<(), S
         .ok_or("Failed to find config directory")?;
     
     let repo_path = project_dirs.data_dir().join(profile);
-    
     // Check if the repository exists
     if !repo_path.exists() {
         return Err("Repository does not exist".into());
     }
+
+    // add all changes
+    let _ = git_command(&["add", "."])?;
     
     // Commit changes
     let output = git_command(&["commit", "-m", message])?;
-    println!("Commit output: {}", output);
+    write_log("info", "COMMIT", &format!("Commit output: {}", output), Some(profile.to_string()))?;
     
+
     // Push changes if requested
     if push {
+        // first pull to ensure we are up to date
+        let output = git_command(&["pull"])?;
+        write_log("info", "PULL", &format!("Pull output: {}", output), Some(profile.to_string()))?;
+
         let output = git_command(&["push"])?;
-        println!("Push output: {}", output);
+        write_log("info", "PUSH", &format!("Push output: {}", output), Some(profile.to_string()))?;
     }
     
     Ok(())

@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 #[command(version = "0.1.0")]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>, // Made optional to allow running without a subcommand
     /// Verbose output
     #[arg(short, long, global = true)]
     pub verbose: bool,
@@ -14,8 +14,11 @@ pub struct Cli {
     #[arg(short, long, global = true)]
     pub quiet: bool,
     /// Set profile [default] 
-    #[arg(short, long, global = true)]
+    #[arg(short, global = true)]
     pub profile: Option<String>,
+    /// show paths used
+    #[arg(long, global = true)]
+    pub paths: bool,
 
 }
 
@@ -63,16 +66,13 @@ pub enum Commands {
         message: Option<String>,
 
         /// Push changes to the remote repository
-        #[arg(short, long)]
+        #[arg(long)]
         push: bool,
 
         /// Force push changes to the remote repository
         #[arg(short, long)]
         force: bool,
 
-        /// Show preview of changes
-        #[arg(short, long)]
-        dry_run: bool,
     },
 
     /// Restore a configuration file 

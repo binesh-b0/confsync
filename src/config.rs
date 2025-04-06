@@ -190,3 +190,53 @@ pub fn add_tracking_file(path: PathBuf, name: String) -> Result<(), String> {
     
     Ok(())
 }
+
+
+/// Remove a file from the tracking list
+pub fn _remove_tracking_file(name: String) -> Result<(), String> {
+    let mut config = load_config()?;
+
+    if config.tracking.file_map.remove(&name).is_none() {
+        return Err("File not found in tracking list".into());
+    }
+
+    save_config(&config)?;
+
+    Ok(())
+}
+
+/// List all tracked files
+pub fn _list_tracking_files() -> Result<(), String> {
+    let config = load_config()?;
+
+    if config.tracking.file_map.is_empty() {
+        println!("No files are being tracked.");
+        return Ok(());
+    }
+
+    for (name, path) in &config.tracking.file_map {
+        println!("{}: {}", name, path.display());
+    }
+
+    Ok(())
+}
+/// Check if a file is being tracked. 
+pub fn is_tracked(name: &str) -> bool {
+    if let Ok(config) = load_config() {
+        config.tracking.file_map.contains_key(name)
+    } else {
+        false
+    }
+}
+ 
+/// Get the path of a tracked file
+pub fn get_path_from_alias(name: &str) -> Result<PathBuf, String> {
+    let config = load_config()?;
+
+    config
+        .tracking
+        .file_map
+        .get(name)
+        .cloned()
+        .ok_or_else(|| format!("File {} is not being tracked", name))
+}
