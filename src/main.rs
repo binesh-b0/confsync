@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 
 use clap::{CommandFactory, Parser};
 
@@ -6,10 +5,14 @@ mod cli;
 mod config;
 mod git;
 mod ops;
+mod commands;
+
+use commands::init::handle_init;
+use commands::add::handle_add;
 
 use cli::{Cli, ConfigCommands, DeleteTarget};
 use config::{
-    add_tracking_file, check_config_exists, default_config_path, delete_config, load_config, save_config, view_config, Config, is_tracked
+    check_config_exists, default_config_path, delete_config, load_config, view_config, is_tracked
 };
 use ops::{copy_file_to_repo, write_log};
 
@@ -32,99 +35,10 @@ fn main() {
 
     match cli.command {
         Some(command) => match command {
-            cli::Commands::Init { repo_url, local, force } => {
-                // load or create config
-                let mut config = match load_config() {
-                    Ok(config) => config,
-                    Err(e) => {
-                        write_log("error", "INIT", &format!("Error loading config: {}", e), None).unwrap();
-                        println!("Error loading config: {}", e);
-                        Config::default()
-                    }
-                };
-                // Prevent overwriting existing config if not forced  
-                if check_config_exists() && !force {
-                    println!("Config already exists. Use --force to reinitialize.");
-                    write_log("info", "INIT", "Init aborted: config already exists", None).unwrap();
-                    return;
-                }
-                // Update config with new repo URL and storage option
-                config.storage.repo_url = repo_url.unwrap_or_default();
-                config.storage.local = local;
-                
-                // Save the updated config
-                if let Err(e) = save_config(&config) {
-                    write_log("error", "INIT", &format!("Error saving config: {}", e), None).unwrap();
-                    eprintln!("Error saving config: {}", e);
-                    return;
-                } else {
-                    write_log("info", "INIT", "Config saved successfully", None).unwrap();
-                }
-
-                // Initialize the git repository
-                // if the local is false, use repo_url to add remote
-                let remote_url = if config.storage.local {
-                    None
-                } else if !config.storage.repo_url.is_empty() {
-                    Some(config.storage.repo_url.as_str())
-                } else {
-                    None
-                };
-                match git::init_repo(&profile,remote_url) {
-                    Ok(_) => {
-                        write_log("info", "INIT", "Git repository initialized successfully", None).unwrap();
-                        println!("Git initialized");
-                        println!("Welcome to confSync! \n\
-                        Your configuration files will be stored at: \n\
-                        {} \n\
-                        Add files to be tracked using the `add` command.",
-                        default_config_path().unwrap().display());
-                    },
-                    Err(e) => {
-                        write_log("error", "INIT", &format!("Error initializing git repository: {}", e), None).unwrap();
-                        eprintln!("Error initializing git repository: {}", e);
-                        std::process::exit(1);
-                    }
-                }
-            },
-            cli::Commands::Add { path,name } => {
-                // check if config file exists
-                if !check_config_exists() {
-                    println!(" Please run `confsync init` to initialize.");
-                    write_log("warn", "ADD", "Attempt to add tracking file without config", None).unwrap();
-                    return;
-                }
-                // path to PathBuf
-                let path = match PathBuf::from(path).canonicalize() {
-                    Ok(p) => p,
-                    Err(e) => {
-                        write_log("error", "ADD", &format!("Error resolving path: {}", e), None).unwrap();
-                        eprintln!("Error resolving path: {}", e);
-                        return;
-                    }
-                };
-
-                // add to tracking
-                match add_tracking_file(path.clone(),name.clone()) {
-                    Ok(()) => {
-                        write_log("info", "ADD", &format!("Added {} to tracking as {}", path.display(), name), None).unwrap();
-                        println!("Added {} to tracking as {}", path.display(), name);
-                        // copy the file to the repo
-                        if let Err(e) = copy_file_to_repo(path.clone(), name.as_str(), &profile) {
-                            write_log("error", "ADD", &format!("Error copying file to repo: {}", e), None).unwrap();
-                            eprintln!("Error copying file to repo: {}", e);
-                            return;
-                        } else {
-                            write_log("info", "ADD", &format!("File {} copied to repo successfully", name), None).unwrap();
-                        }
-                    }
-                    Err(e) => {
-                        write_log("error", "ADD", &format!("Error adding tracking: {}", e), None).unwrap();
-                        eprintln!("Error adding tracking: {}", e);
-                        return;
-                    }
-                }
-            },
+            cli::Commands::Init { repo_url, local, force } => 
+                handle_init(repo_url, local, force,None),
+            cli::Commands::Add { path,name } => 
+                handle_add(path, name, &profile),
             cli::Commands::Delete { target } => {
                 match target {
                     DeleteTarget::Config { force } =>{
@@ -280,7 +194,7 @@ fn main() {
             }
             _ => {
                 println!("other command");
-                write_log("warn", "MAIN", "Unrecognized command", None).unwrap();
+                write_log("warn", "MAIN", "I have no code for that", None).unwrap();
             }
         },
         None => {
