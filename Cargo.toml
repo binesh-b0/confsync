@@ -10,3 +10,5 @@ directories = "6.0.0"
 git2 = "0.20.1"
 serde = {version = "1.0", features = ["derive"]}
 toml = "0.8"
+colored = "3.0.0"
+indicatif = "0.17.11"

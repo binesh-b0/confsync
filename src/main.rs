@@ -6,6 +6,7 @@ mod config;
 mod git;
 mod ops;
 mod commands;
+mod ui;
 
 use commands::init::handle_init;
 use commands::add::handle_add;
@@ -15,6 +16,7 @@ use config::{
     check_config_exists, default_config_path, delete_config, load_config, view_config, is_tracked
 };
 use ops::{copy_file_to_repo, write_log};
+use ui::printer;
 
 
 fn main() {
@@ -134,7 +136,7 @@ fn main() {
             cli::Commands::Git { args } => {
                 // Forward the git command to the git CLI
                 match git::git_command(&args.iter().map(String::as_str).collect::<Vec<&str>>()) {
-                    Ok(output) => println!("{}", output),
+                    Ok(output) => printer(&output,ui::MessageType::Git),
                     Err(e) => eprintln!("Error executing git command: {}", e),
                 }
             }

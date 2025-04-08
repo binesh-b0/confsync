@@ -1,5 +1,5 @@
-use crate::{config::*, git, ops::write_log};
 
+use crate::{config::*, git, ops::write_log};
 pub fn handle_init(repo_url: Option<String>, local: bool, force: bool, profile: Option<String>) {
     let profile = profile.as_deref().unwrap_or("default");
     // load or create config
