@@ -14,10 +14,10 @@ pub struct Cli {
     #[arg(short, long, global = true)]
     pub quiet: bool,
     /// Set profile [default] 
-    #[arg(short, global = true)]
+    #[arg(short = 'P', global = true)]
     pub profile: Option<String>,
     /// show paths used
-    #[arg(long, global = true)]
+    #[arg(short,long, global = true)]
     pub paths: bool,
 
 }

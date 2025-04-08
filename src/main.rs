@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 mod cli;
 mod config;
@@ -16,6 +16,8 @@ use ops::{copy_file_to_repo, write_log};
 
 fn main() {
     let cli = Cli::parse();
+    // set default profile to "default"
+    let profile = cli.profile.unwrap_or_else(|| "default".to_string());
 
     // Check if the paths argument is set
     if cli.paths {
@@ -68,7 +70,7 @@ fn main() {
                 } else {
                     None
                 };
-                match git::init_repo("default",remote_url) {
+                match git::init_repo(&profile,remote_url) {
                     Ok(_) => {
                         write_log("info", "INIT", "Git repository initialized successfully", None).unwrap();
                         println!("Git initialized");
@@ -108,7 +110,7 @@ fn main() {
                         write_log("info", "ADD", &format!("Added {} to tracking as {}", path.display(), name), None).unwrap();
                         println!("Added {} to tracking as {}", path.display(), name);
                         // copy the file to the repo
-                        if let Err(e) = copy_file_to_repo(path.clone(), name.as_str(), "default") {
+                        if let Err(e) = copy_file_to_repo(path.clone(), name.as_str(), &profile) {
                             write_log("error", "ADD", &format!("Error copying file to repo: {}", e), None).unwrap();
                             eprintln!("Error copying file to repo: {}", e);
                             return;
@@ -143,7 +145,7 @@ fn main() {
                     },
                     DeleteTarget::Local { force } => {
                         if force {
-                            if let Err(e) = git::delete_repo(true, false, "default") {
+                            if let Err(e) = git::delete_repo(true, false, &profile) {
                                 write_log("error", "DELETE", &format!("Error deleting local repo: {}", e), None).unwrap();
                                 eprintln!("Error deleting local repo: {}", e);
                             } else {
@@ -157,7 +159,7 @@ fn main() {
                     },
                     DeleteTarget::Remote { force } => {
                         if force {
-                            if let Err(e) = git::delete_repo(false, true, "default") {
+                            if let Err(e) = git::delete_repo(false, true, &profile) {
                                 write_log("error", "DELETE", &format!("Error deleting remote repo: {}", e), None).unwrap();
                                 eprintln!("Error deleting remote repo: {}", e);
                             } else {
@@ -170,7 +172,7 @@ fn main() {
                     },
                     DeleteTarget::All { force } => {
                         if force {
-                            if let Err(e) = git::delete_repo(true, true, "default") {
+                            if let Err(e) = git::delete_repo(true, true, &profile) {
                                 write_log("error", "DELETE", &format!("Error deleting everything: {}", e), None).unwrap();
                                 eprintln!("Error deleting all repos: {}", e);
                             } else {
@@ -252,7 +254,7 @@ fn main() {
                         return;
                     }
                     // copy the file to the repo
-                    if let Err(e) = copy_file_to_repo(path.clone(), alias.as_str(), "default") {
+                    if let Err(e) = copy_file_to_repo(path.clone(), alias.as_str(), &profile) {
                         write_log("error", "BACKUP", &format!("Error copying file to repo: {}", e), None).unwrap();
                         eprintln!("Error copying file to repo: {}", e);
                         return;
@@ -260,7 +262,7 @@ fn main() {
                         write_log("info", "BACKUP", &format!("File {} copied to repo successfully", alias), None).unwrap();
                     }
                     // commit the changes
-                    if let Err(e) = git::commit_and_push("default", message.as_deref().unwrap_or(&alias), push && !load_config().unwrap().storage.local) {
+                    if let Err(e) = git::commit_and_push(&profile, message.as_deref().unwrap_or(&alias), push && !load_config().unwrap().storage.local) {
                         write_log("error", "BACKUP", &format!("Error committing and pushing: {}", e), None).unwrap();
                         eprintln!("Error committing and pushing: {}", e);
                         return;
@@ -282,7 +284,16 @@ fn main() {
             }
         },
         None => {
-            println!("No subcommand provided. Use --help for usage information.");
+            // print all the commands and their descriptions from the clap
+            let mut app = Cli::command();
+            app.print_help().unwrap();
+
+            // check if the config file exists
+            if !check_config_exists() {
+                println!("\n\nRun `confsync init` to initialize.");
+            }
+
+            
         }
     }
 }
