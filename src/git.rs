@@ -1,8 +1,9 @@
 
+use chrono::Utc;
 use directories::ProjectDirs;
-use std::fs;
+use std::{fs, path::Path};
 use std::process::Command;
-use git2::Repository;
+use git2::{DiffOptions, Repository};
 
 use crate::ops::write_log;
 
@@ -142,4 +143,101 @@ pub fn delete_repo(local: bool, remote: bool,profile: &str) -> Result<(), String
     }
 
     Ok(())
+}
+
+/// Get a file's commit history using git2
+/// return the datetime of the commits in a list of strings
+pub fn _get_commit_history(alias: &str, profile: &str) -> Result<Vec<String>, String> { 
+    // Locate the configuration directory.
+    let project_dirs = ProjectDirs::from("", "", "confsync")
+        .ok_or("Failed to find config directory")?;
+    
+    // Use the provided profile ("default" by default) to build the repo path.
+    let repo_path = project_dirs.data_dir().join(profile);
+    
+    // Verify that the repository exists.
+    if !repo_path.exists() {
+        return Err("Repository does not exist".into());
+    }
+    
+    // Open the repository.
+    let repo = Repository::open(repo_path)
+        .map_err(|e| format!("Failed to open repository: {}", e))?;
+    
+    // The relative path to the specific file is: alias/file.
+    let target_file = Path::new(alias).join("file");
+
+    // Create a revwalk to iterate over commit history.
+    let mut revwalk = repo.revwalk()
+        .map_err(|e| format!("Failed to create revwalk: {}", e))?;
+    revwalk.push_head()
+        .map_err(|e| format!("Failed to push head: {}", e))?;
+
+    // This vector will hold the formatted commit timestamps.
+    let mut commit_dates = Vec::new();
+
+    // Iterate over commits.
+    for oid_result in revwalk {
+        let oid = oid_result.map_err(|e| format!("Failed to get oid: {}", e))?;
+        let commit = repo.find_commit(oid)
+            .map_err(|e| format!("Failed to find commit: {}", e))?;
+
+        // A flag to mark if the target file was changed.
+        let mut file_changed = false;
+        
+        // If this commit has no parent (i.e. it's the initial commit)
+        if commit.parent_count() == 0 {
+            let tree = commit.tree()
+                .map_err(|e| format!("Failed to get tree: {}", e))?;
+            // Check if the target file exists in the initial commit.
+            if tree.get_path(&target_file).is_ok() {
+                file_changed = true;
+            }
+        } else {
+            // Compare against the first parent.
+            let parent = commit.parent(0)
+                .map_err(|e| format!("Failed to get parent commit: {}", e))?;
+            let parent_tree = parent.tree()
+                .map_err(|e| format!("Failed to get parent tree: {}", e))?;
+            let curr_tree = commit.tree()
+                .map_err(|e| format!("Failed to get commit tree: {}", e))?;
+
+            // Initialize diff options.
+            let mut diff_opts = DiffOptions::new();
+            // Create the diff between the first parent and the current commit.
+            let diff = repo.diff_tree_to_tree(Some(&parent_tree), Some(&curr_tree), Some(&mut diff_opts))
+                .map_err(|e| format!("Failed to generate diff: {}", e))?;
+            
+            // Iterate through diff entries.
+            diff.foreach(
+                // For each delta, check if the target file path is present.
+                &mut |delta, _| {
+                    if let Some(new_path) = delta.new_file().path() {
+                        if new_path == target_file.as_path() {
+                            file_changed = true;
+                        }
+                    }
+                    if let Some(old_path) = delta.old_file().path() {
+                        if old_path == target_file.as_path() {
+                            file_changed = true;
+                        }
+                    }
+                    true
+                },
+                None,
+                None,
+                None
+            ).map_err(|e| format!("Failed to iterate over diff: {}", e))?;
+        }
+        
+        // If the commit touched the target file, record its timestamp.
+        if file_changed {
+            let dt = chrono::TimeZone::timestamp_opt(&Utc, commit.time().seconds(), 0)
+                .single()
+                .ok_or("Invalid timestamp")?;
+            commit_dates.push(dt.format("%Y-%m-%d %H:%M:%S").to_string());
+        }
+    }
+    
+    Ok(commit_dates)
 }

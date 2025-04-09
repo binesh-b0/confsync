@@ -51,8 +51,53 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(),
             (copied as f64 / file_size as f64) * 100.0
         );
     }
+    // append or create a new file => alias.cmt, to track backup time
+    let cmt_file = repo_path.join(alias).join(format!("{}.cmt", file_name));
+    let mut cmt_file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(cmt_file)
+        .map_err(|e| format!("Failed to open comment file: {}", e))?;
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    writeln!(
+        cmt_file,
+        "[{}] {}",
+        timestamp,
+        src.display()
+    )
+    .map_err(|e| format!("Failed to write to comment file: {}", e))?;
 
     Ok(())
+}
+
+/// Read the cmt file: timestamp only
+/// return the datetime of the commits in a list of strings
+pub fn read_cmt(alias: &str, profile: &str) -> Result<Vec<String>, String> {
+    let project_dirs =
+        ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");
+    let repo_path = project_dirs.data_dir().join(profile);
+
+    let cmt_file = repo_path
+        .join(alias)
+        .read_dir()
+        .map_err(|e| format!("Failed to read directory: {}", e))?
+        .filter_map(|entry| entry.ok())
+        .find(|entry| entry.path().extension().map_or(false, |ext| ext == "cmt"))
+        .map(|entry| entry.path())
+        .ok_or_else(|| "Failed to locate comment file with .cmt extension".to_string())?;
+    if !cmt_file.exists() {
+        return Err("Comment file does not exist".into());
+    }
+
+    let mut file = fs::File::open(cmt_file)
+        .map_err(|e| format!("Failed to open comment file: {}", e))?;
+
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .map_err(|e| format!("Failed to read comment file: {}", e))?;
+
+    let lines: Vec<String> = contents.lines().map(|line| line.to_string()).collect();
+    Ok(lines)
 }
 
 /// write to log file

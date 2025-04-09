@@ -190,11 +190,35 @@ fn main() {
                 }
                 
             }
-            cli::Commands::List { tracked , alias: _   } => {
+            cli::Commands::List { tracked , alias   } => {
                 // list the tracked files
                 if tracked {
                     if let Err(e) = config::list_tracked_files() {
                         printer(format!("Error listing tracked files: {}", e).as_str(), ui::MessageType::Error);
+                    }
+                }
+                else {
+                    // list the history of the file
+                    if let Some(alias_value) = alias.as_deref() {
+                        // get timestamp from the cmt file
+                        match ops::read_cmt(alias_value, &profile) {
+                            Ok(lines) => {
+                                if lines.is_empty() {
+                                    ui::printer("No history found",ui::MessageType::Error);
+                                    write_log("info", "LIST", &format!("No history found for {}", alias_value), None).unwrap();
+                                } else {
+                                    ui::printer(format!("=== {} === ", alias_value).as_str(),ui::MessageType::Info);
+                                    for line in lines {
+                                        ui::printer(&line,ui::MessageType::Default);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                printer(format!("Error reading cmt file: {}", e).as_str(), ui::MessageType::Error);
+                            }
+                        }
+                    } else {
+                        printer("Alias not provided", ui::MessageType::Error);
                     }
                 }
                 
