@@ -90,13 +90,15 @@ pub enum Commands {
 
     /// Show backup history
     List {
-        /// Compact view
-        #[arg(short, long)]
-        oneline: bool,
 
-        /// Show changed files
+        /// Show tracked files
         #[arg(short, long)]
-        verbose: bool,
+        tracked: bool,
+
+        ///  history for an alias    
+        #[arg(short, long, required_unless_present = "tracked")]
+        alias: Option<String>,
+
     },
 
     /// Daemon mode for auto backup (Phase 2)

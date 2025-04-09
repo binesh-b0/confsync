@@ -190,6 +190,15 @@ fn main() {
                 }
                 
             }
+            cli::Commands::List { tracked , alias: _   } => {
+                // list the tracked files
+                if tracked {
+                    if let Err(e) = config::list_tracked_files() {
+                        printer(format!("Error listing tracked files: {}", e).as_str(), ui::MessageType::Error);
+                    }
+                }
+                
+            }
             cli::Commands::Version => {
                 println!("Version: {}", env!("CARGO_PKG_VERSION"));
                 write_log("info", "VERSION", "Version command executed", None).unwrap();

@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
+use crate::ui;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub storage: Storage,
@@ -206,7 +208,7 @@ pub fn _remove_tracking_file(name: String) -> Result<(), String> {
 }
 
 /// List all tracked files
-pub fn _list_tracking_files() -> Result<(), String> {
+pub fn list_tracked_files() -> Result<(), String> {
     let config = load_config()?;
 
     if config.tracking.file_map.is_empty() {
@@ -215,7 +217,7 @@ pub fn _list_tracking_files() -> Result<(), String> {
     }
 
     for (name, path) in &config.tracking.file_map {
-        println!("{}: {}", name, path.display());
+        ui::print_table (&name, &path.display().to_string(), None);
     }
 
     Ok(())
