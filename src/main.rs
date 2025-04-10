@@ -170,7 +170,7 @@ fn main() {
                         return;
                     }
                     // copy the file to the repo
-                    if let Err(e) = copy_file_to_repo(path.clone(), alias.as_str(), &profile) {
+                    if let Err(e) = copy_file_to_repo(path.clone(), alias.as_str(), &profile,false) {
                         write_log("error", "BACKUP", &format!("Error copying file to repo: {}", e), None).unwrap();
                         eprintln!("Error copying file to repo: {}", e);
                         return;
@@ -184,7 +184,7 @@ fn main() {
                         return;
                     } else {
                         write_log("info", "BACKUP", "Backup completed successfully", None).unwrap();
-                        println!("Backup completed successfully");
+                        printer("DOne", ui::MessageType::Default);
                     }
                     
                 }

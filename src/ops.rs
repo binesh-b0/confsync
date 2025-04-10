@@ -1,8 +1,40 @@
 use directories::ProjectDirs;
-use std::{fs, io::{Read, Write}, path::PathBuf};
+use std::{fs, io::{Read, Write}, path::{Path, PathBuf}};
+
+use crate::ui::{self, printer};
+
+/// helper fn to compare two files
+fn compare_files(path1: &Path,path2: &Path) -> Result<bool, String> {
+    let mut file1 = fs::File::open(path1)
+        .map_err(|e| format!("Failed to open file1: {}", e))?;
+    let mut file2 = fs::File::open(path2)
+        .map_err(|e| format!("Failed to open file2: {}", e))?;
+
+    let mut buf1 = [0u8;8192];
+    let mut buf2 = [0u8;8192];
+
+    loop {
+        let n1 = file1.read(&mut buf1)
+            .map_err(|e| format!("Failed to read file1: {}", e))?;
+        let n2 = file2.read(&mut buf2)
+            .map_err(|e| format!("Failed to read file2: {}", e))?;
+        if n1 != n2 {
+            return Ok(false);
+        }
+        if n1 == 0 {
+            break;
+        }
+        if buf1[..n1] != buf2[..n2] {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 
 // Copy tracked file
-pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(), String> {
+pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str, force: bool) -> Result<(), String> {
+    
     let project_dirs =
         ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");
     let repo_path = project_dirs.data_dir().join(profile);
@@ -24,12 +56,30 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str) -> Result<(),
     let file_size = fs::metadata(&src)
         .map_err(|e| format!("Failed to get file metadata: {}", e))?
         .len();
+    // compare the files
+    if !force && dest.exists() {
+        let src_meta = fs::metadata(&src)
+            .map_err(|e| format!("Failed to get source file metadata: {}", e))?;
+        let dest_meta = fs::metadata(&dest)
+            .map_err(|e| format!("Failed to get destination file metadata: {}", e))?;
 
+        if src_meta.len() == dest_meta.len() {
+            if compare_files(&src, &dest)? {
+                printer(format!("That one has a backup").as_str(), ui::MessageType::Success);
+                write_log("info",
+                    "COPY",
+                    &format!("File already backedup {}", dest.display()), Some(profile.to_string()))?;
+                return Ok(());
+            }
+        }
+    }
+
+
+    // Re-open source file to reset pointer for copying
     let mut src_file = fs::File::open(&src)
         .map_err(|e| format!("Failed to open source file: {}", e))?;
     let mut dest_file = fs::File::create(&dest)
-        .map_err(|e| format!("Failed to create destination file: {}", e))?;
-
+    .map_err(|e| format!("Failed to create destination file: {}", e))?;
     let mut buffer = [0u8; 8192];
     let mut copied: u64 = 0;
 

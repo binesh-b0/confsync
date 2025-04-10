@@ -26,7 +26,7 @@ pub fn handle_add(path: String, name: String, profile: &str) {
             write_log("info", "ADD", &format!("Added {} to tracking as {}", path.display(), name), None).unwrap();
             println!("Added {} to tracking as {}", path.display(), name);
             // copy the file to the repo
-            if let Err(e) = crate::ops::copy_file_to_repo(path.clone(), name.as_str(), &profile) {
+            if let Err(e) = crate::ops::copy_file_to_repo(path.clone(), name.as_str(), &profile,true) {
                 write_log("error", "ADD", &format!("Error copying file to repo: {}", e), None).unwrap();
                 eprintln!("Error copying file to repo: {}", e);
                 return;
