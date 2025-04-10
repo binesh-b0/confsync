@@ -8,12 +8,12 @@ mod ops;
 mod commands;
 mod ui;
 
-use commands::init::handle_init;
+use commands::{delete::handle_delete, init::handle_init};
 use commands::add::handle_add;
 
-use cli::{Cli, ConfigCommands, DeleteTarget};
+use cli::{Cli, ConfigCommands};
 use config::{
-    check_config_exists, default_config_path, delete_config, load_config, view_config, is_tracked
+    check_config_exists, default_config_path, load_config, view_config, is_tracked
 };
 use ops::{copy_file_to_repo, write_log};
 use ui::printer;
@@ -41,73 +41,8 @@ fn main() {
                 handle_init(repo_url, local, force,None),
             cli::Commands::Add { path,name } => 
                 handle_add(path, name, &profile),
-            cli::Commands::Delete { target } => {
-                match target {
-                    DeleteTarget::Config { force } =>{
-                        if force {
-                            if let Err(e) = delete_config() {
-                                write_log("error", "DELETE", &format!("Error deleting config: {}", e), None).unwrap();
-                                eprintln!("Error deleting config: {}", e);
-                            } else {
-                                write_log("info", "DELETE", "confSync config deleted", None).unwrap();
-                                println!("confSync config deleted.😔");
-                            }
-                        } else if check_config_exists() {
-                            println!(" Use --force to delete.");
-                        } else {
-                            println!("No config file found.");
-                            write_log("info", "DELETE", "No config file found", None).unwrap();
-                        }
-                    },
-                    DeleteTarget::Local { force } => {
-                        if force {
-                            if let Err(e) = git::delete_repo(true, false, &profile) {
-                                write_log("error", "DELETE", &format!("Error deleting local repo: {}", e), None).unwrap();
-                                eprintln!("Error deleting local repo: {}", e);
-                            } else {
-                                write_log("info", "DELETE", "Local repository deleted", None).unwrap();
-                                println!("Local repository deleted.😔");
-                            }
-                        } else {
-                            println!("Use --force to delete.");
-                            write_log("warn", "DELETE", "Attempt to delete local repo without force flag", None).unwrap();
-                        }
-                    },
-                    DeleteTarget::Remote { force } => {
-                        if force {
-                            if let Err(e) = git::delete_repo(false, true, &profile) {
-                                write_log("error", "DELETE", &format!("Error deleting remote repo: {}", e), None).unwrap();
-                                eprintln!("Error deleting remote repo: {}", e);
-                            } else {
-                                write_log("info", "DELETE", "Remote repository deleted", None).unwrap();
-                                println!("Remote repository deleted.");
-                            }
-                        } else {
-                            println!("Use --force to delete.");
-                        }
-                    },
-                    DeleteTarget::All { force } => {
-                        if force {
-                            if let Err(e) = git::delete_repo(true, true, &profile) {
-                                write_log("error", "DELETE", &format!("Error deleting everything: {}", e), None).unwrap();
-                                eprintln!("Error deleting all repos: {}", e);
-                            } else {
-                                write_log("info", "DELETE", "Deleted all", None).unwrap();
-                                println!("All repositories deleted.");
-                            }
-                            if let Err(e) = delete_config() {
-                                write_log("error", "DELETE", &format!("Error deleting config: {}", e), None).unwrap();
-                                eprintln!("Error deleting config: {}", e);
-                            } else {
-                                write_log("info", "DELETE", "confsync config deleted", None).unwrap();
-                                println!("confsync config deleted.");
-                            }
-                        } else {
-                            println!("Use --force to delete.");
-                        }
-                    }
-                }
-            },
+            cli::Commands::Delete { target } => 
+                handle_delete(target, &profile),
             cli::Commands::Config { command } => {
                 match command {
                     ConfigCommands::Show => {
