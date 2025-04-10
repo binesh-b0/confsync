@@ -1,6 +1,6 @@
-# confSync
+# confsync
 
- **confSync** is a command-line tool that grabs your precious config files, backs them up with Git, and keeps them safe in one place—so you can sleep easy. Written in Rust, because, well... Rust is cool.
+ A is a command-line tool that grabs config files, backs them up with Git, and keeps them safe in one place. Written in Rust, because, well... Rust is cool.
 
 ## Requirements
 - **Rust** (stable)
