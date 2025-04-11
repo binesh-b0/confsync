@@ -76,9 +76,13 @@ pub fn load_config() -> Result<Config, String> {
     }
     match fs::read_to_string(&path) {
         Ok(contents) => {
-            let config: Config = toml::from_str(&contents)
-                .map_err(|e| format!("Failed to parse config file: {}", e))?;
-            Ok(config)
+            match toml::from_str(&contents) {
+                Ok(config) => Ok(config),
+                Err(e) => {
+                    ui::printer(format!("Warning: Failed to parse config file: {}. Using default configuration.", e).as_str(),ui::MessageType::Error);
+                    Ok(Config::default())
+                }
+            }
         }
         Err(e) => Err(format!("Failed to read config file: {}", e)),
     }

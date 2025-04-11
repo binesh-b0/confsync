@@ -120,6 +120,31 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str, force: bool) 
     Ok(())
 }
 
+/// restore file from repo if content is different
+pub fn restore_file(dest:PathBuf,alias:&str,profile: &str, force: bool) -> Result<(), String> {
+    let project_dirs =
+        ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");
+    let repo_path = project_dirs.data_dir().join(profile);
+
+    // extract the file name from the path
+    let file_name = dest
+        .file_name()
+        .ok_or_else(|| "Failed to get file name".to_string())?
+        .to_str()
+        .ok_or_else(|| "Failed to convert file name to string".to_string())?;
+
+    let src = repo_path.join(alias).join(file_name);
+    if !src.exists() {
+        return Err(format!("File {} not found in backup", src.display()));
+    }
+    if force | compare_files(&dest, &src)? {
+        printer(format!("That one is already up to date").as_str(), ui::MessageType::Success);
+        return Ok(());
+    }
+    fs::copy(src, dest).map_err(|e| format!("Failed to copy file: {}", e))?;
+    Ok(())
+}
+
 /// Read the cmt file: timestamp only
 /// return the datetime of the commits in a list of strings
 pub fn read_cmt(alias: &str, profile: &str) -> Result<Vec<String>, String> {

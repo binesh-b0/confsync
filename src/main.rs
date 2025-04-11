@@ -15,7 +15,7 @@ use cli::{Cli, ConfigCommands};
 use config::{
     check_config_exists, default_config_path, load_config, view_config, is_tracked
 };
-use ops::{copy_file_to_repo, write_log};
+use ops::{copy_file_to_repo, restore_file, write_log};
 use ui::printer;
 
 
@@ -125,6 +125,33 @@ fn main() {
                 }
                 
             }
+            cli::Commands::Restore { target, dry_run, overwrite } => {
+                // check if file is tracked
+                if !is_tracked(target.as_str()) {
+                    println!("{} not found", target);
+                    write_log("warn", "RESTORE", &format!("{} not found.", target), None).unwrap();
+                    return;
+                }
+                // get the path of the file from alias => dest
+                let path= match config::get_path_from_alias(&target) {
+                    Ok(path) => path,
+                    Err(e) => {
+                        write_log("error", "RESTORE", &format!("Error getting path from alias: {}", e), None).unwrap();
+                        eprintln!("Error getting path from alias: {}", e);
+                        return;
+                    }
+                };
+                // copy the file from the repo to the dest
+                if let Err(e) = restore_file(path.clone(), target.as_str(), &profile, overwrite) {
+                    write_log("error", "RESTORE", &format!("Error copying file to repo: {}", e), None).unwrap();
+                    eprintln!("Error copying file to repo: {}", e);
+                    return;
+                } else {
+                    write_log("info", "RESTORE", &format!("File {} copied from repo successfully", target), None).unwrap();
+                    printer("Done", ui::MessageType::Default);  
+
+                }
+            },
             cli::Commands::List { tracked , alias   } => {
                 // list the tracked files
                 if tracked {
