@@ -39,7 +39,7 @@ pub fn init_repo(profile: &str, repo_url: Option<&str>) -> Result<(), String> {
             .map_err(|e| format!("Failed to set remote: {}", e))?;
     }
     write_log("info", "INIT", "Initialized repo", None).unwrap();
-    println!("Initialized repository at: {}", repo_path.display());
+    // println!("Initialized repository at: {}", repo_path.display());
     Ok(())
 }
 
@@ -139,7 +139,7 @@ pub fn delete_repo(local: bool, remote: bool,profile: &str) -> Result<(), String
     if remote {
         // Delete the remote repository
         let output = git_command(&["push", "--delete", "origin", "main"])?;
-        println!("Remote repository deleted: {}", output);
+        println!("Remote branch deleted: {}", output);
     }
 
     Ok(())

@@ -191,6 +191,11 @@ pub fn write_log(
         .join(profile_str)
         .join("log.txt");
 
+    if let Some(parent) = log_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create log directory: {}", e))?;
+    }
+
     let mut file = fs::OpenOptions::new()
         .append(true)
         .create(true)

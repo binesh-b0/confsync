@@ -1,5 +1,5 @@
 
-use crate::{config::*, git, ops::write_log};
+use crate::{config::*, git, ops::write_log, ui, ops};
 pub fn handle_init(repo_url: Option<String>, local: bool, force: bool, profile: Option<String>) {
     let profile = profile.as_deref().unwrap_or("default");
     // load or create config
@@ -13,7 +13,8 @@ pub fn handle_init(repo_url: Option<String>, local: bool, force: bool, profile: 
     };
     // Prevent overwriting existing config if not forced  
     if check_config_exists() && !force {
-        println!("Config already exists. Use --force to reinitialize.");
+        ui::printer("Already up and running", ui::MessageType::Success);
+        ui::printer("\nuse --force to reinitalize", ui::MessageType::Default);
         write_log("info", "INIT", "Init aborted: config already exists", None).unwrap();
         return;
     }
@@ -55,4 +56,14 @@ pub fn handle_init(repo_url: Option<String>, local: bool, force: bool, profile: 
             std::process::exit(1);
         }
     }
+
+    // get the path of the config file
+    let config_path = default_config_path().unwrap();
+
+    // copy the config file to the repo
+    ops::copy_file_to_repo(config_path,"confsync", "default",true).unwrap_or_else(|e| {
+        write_log("error", "INIT", &format!("Error copying config file to repo: {}", e), None).unwrap();
+        eprintln!("Error copying config file to repo: {}", e);
+    });
+    
 }

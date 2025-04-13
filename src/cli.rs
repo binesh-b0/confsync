@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "confSync", disable_version_flag = true)]
-#[command(about = "backup and sync configuration files")]
+#[command(about = "Backup files")]
 #[command(version = "0.1.0")]
 pub struct Cli {
     #[command(subcommand)]
@@ -93,13 +93,8 @@ pub enum Commands {
 
     /// Show backup history
     List {
-
-        /// Show tracked files
-        #[arg(short, long)]
-        tracked: bool,
-
         ///  history for an alias    
-        #[arg(short, long, required_unless_present = "tracked")]
+        #[arg(short, long)]
         alias: Option<String>,
 
     },

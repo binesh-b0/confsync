@@ -157,9 +157,9 @@ fn main() {
 
                 }
             },
-            cli::Commands::List { tracked , alias   } => {
-                // list the tracked files
-                if tracked {
+            cli::Commands::List { alias   } => {
+                // list the tracked files if alias is empty
+                if alias.is_none() {
                     if let Err(e) = config::list_tracked_files() {
                         printer(format!("Error listing tracked files: {}", e).as_str(), ui::MessageType::Error);
                     }
