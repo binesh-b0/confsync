@@ -34,6 +34,11 @@ fn main() {
         println!("Config path: {}", config_path.display());
         return; // Exit after printing paths
     }
+    if cli.version {
+        println!("confsync: {}", env!("CARGO_PKG_VERSION"));
+        write_log("info", "VERSION", "Version command executed", None).unwrap();
+        return; 
+    }
 
     match cli.command {
         Some(command) => match command {
@@ -125,7 +130,7 @@ fn main() {
                 }
                 
             }
-            cli::Commands::Restore { target, dry_run, overwrite } => {
+            cli::Commands::Restore { target, dry_run: _, overwrite } => {
                 // check if file is tracked
                 if !is_tracked(target.as_str()) {
                     println!("{} not found", target);
@@ -184,11 +189,7 @@ fn main() {
                     }
                 }
                 
-            }
-            cli::Commands::Version => {
-                println!("Version: {}", env!("CARGO_PKG_VERSION"));
-                write_log("info", "VERSION", "Version command executed", None).unwrap();
-            }
+            },
             _ => {
                 println!("other command");
                 write_log("warn", "MAIN", "I have no code for that", None).unwrap();

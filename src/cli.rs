@@ -1,14 +1,14 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "confSync")]
+#[command(name = "confSync", disable_version_flag = true)]
 #[command(about = "backup and sync configuration files")]
 #[command(version = "0.1.0")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>, // Made optional to allow running without a subcommand
     /// Verbose output
-    #[arg(short, long, global = true)]
+    #[arg(short='V', long, global = true)]
     pub verbose: bool,
     /// Hide warnings and errors
     #[arg(short, long, global = true)]
@@ -19,6 +19,9 @@ pub struct Cli {
     /// show paths used
     #[arg(short,long, global = true)]
     pub paths: bool,
+    /// Version
+    #[arg(short = 'v', long, global = true)]
+    pub version: bool,
 
 }
 
@@ -135,9 +138,6 @@ pub enum Commands {
 
     /// Show changed/untracked files
     Status,
-
-    /// Print Version
-    Version,
 }
 
 #[derive(Subcommand, Debug)]
