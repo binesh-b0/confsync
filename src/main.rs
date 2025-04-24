@@ -42,8 +42,8 @@ fn main() {
 
     match cli.command {
         Some(command) => match command {
-            cli::Commands::Init { repo_url, local, force } => 
-                handle_init(repo_url, local, force,None),
+            cli::Commands::Init { remote,git, force } => 
+                handle_init(remote, git,force,None),
             cli::Commands::Add { path,name } => 
                 handle_add(path, name, &profile),
             cli::Commands::Delete { target } => 

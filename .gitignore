@@ -2,3 +2,12 @@
 Cargo.lock
 /target/*
 /.idea
+
+
+tests/*
+IMPROVEMENTS.md
+CONTRIBUTING.md
+SETUP.md
+        
+src/error.rs
+src/logger.rs

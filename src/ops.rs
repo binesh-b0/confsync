@@ -53,7 +53,7 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str, force: bool) 
     }
     write_log("info", "COPY", &format!("Copying {} to {}", src.display(), dest.display()), Some(profile.to_string()))?;
 
-    let file_size = fs::metadata(&src)
+    let _file_size = fs::metadata(&src)
         .map_err(|e| format!("Failed to get file metadata: {}", e))?
         .len();
     // compare the files
@@ -81,7 +81,6 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str, force: bool) 
     let mut dest_file = fs::File::create(&dest)
     .map_err(|e| format!("Failed to create destination file: {}", e))?;
     let mut buffer = [0u8; 8192];
-    let mut copied: u64 = 0;
 
     loop {
         let bytes_read = src_file
@@ -95,11 +94,6 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str, force: bool) 
             .write_all(&buffer[..bytes_read])
             .map_err(|e| format!("Failed to write to destination file: {}", e))?;
 
-        copied += bytes_read as u64;
-        println!(
-            "Progress: {:.2}%",
-            (copied as f64 / file_size as f64) * 100.0
-        );
     }
     // append or create a new file => alias.cmt, to track backup time
     let cmt_file = repo_path.join(alias).join(format!("{}.cmt", file_name));

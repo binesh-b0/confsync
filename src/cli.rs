@@ -30,11 +30,11 @@ pub enum Commands {
     /// Initialize confsync with new repository
     Init {
         /// URL of the remote repository 
-        repo_url: Option<String>,
+        remote: Option<String>,
 
-        /// Use local repo instead of remote
-        #[arg(long)]
-        local: bool,
+        /// use git
+        #[arg(long, default_value_t = true)]
+        git: bool,
 
         /// Force overwrite existing configuration
         #[arg(long)]

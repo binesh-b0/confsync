@@ -1,6 +1,18 @@
 
 use crate::{config::*, git, ops::write_log, ui, ops};
-pub fn handle_init(repo_url: Option<String>, local: bool, force: bool, profile: Option<String>) {
+pub fn handle_init(repo_url: Option<String>, git: bool, force: bool, profile: Option<String>) {
+    // if not git, print not yet implemented
+    if !git {
+        ui::printer("Not yet implemented", ui::MessageType::Error);
+        write_log("error", "INIT", "Git support not yet implemented", None).unwrap();
+        return;
+    }
+    //  if repo_url is None or empty, set local to true
+    let local = if let Some(url) = repo_url.as_ref() {
+        !url.is_empty()
+    } else {
+        true
+    };
     let profile = profile.as_deref().unwrap_or("default");
     // load or create config
     let mut config = match load_config() {
@@ -43,12 +55,7 @@ pub fn handle_init(repo_url: Option<String>, local: bool, force: bool, profile: 
     match git::init_repo(profile,remote_url) {
         Ok(_) => {
             write_log("info", "INIT", "Git repository initialized successfully", None).unwrap();
-            println!("Git initialized");
-            println!("Welcome to confSync! \n\
-            Your configuration files will be stored at: \n\
-            {} \n\
-            Add files to be tracked using the `add` command.",
-            default_config_path().unwrap().display());
+          
         },
         Err(e) => {
             write_log("error", "INIT", &format!("Error initializing git repository: {}", e), None).unwrap();
@@ -65,5 +72,8 @@ pub fn handle_init(repo_url: Option<String>, local: bool, force: bool, profile: 
         write_log("error", "INIT", &format!("Error copying config file to repo: {}", e), None).unwrap();
         eprintln!("Error copying config file to repo: {}", e);
     });
+    
+    ui::printer("✅ init completed", ui::MessageType::Success);
+    ui::printer("use `confsync add` to add files", ui::MessageType::Default);
     
 }
