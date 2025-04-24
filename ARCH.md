@@ -11,10 +11,10 @@ confsync init [REPO_URL] [FLAGS]
 ```  
 | Argument   | Description                          |  
 |------------|--------------------------------------|  
-| `REPO_URL` | (Optional) Git remote URL (SSH/HTTPS)|  
+| `remote` | (Optional) Git remote URL (SSH/HTTPS)|  
 
 **Flags**:  
-- `--local`: Use local storage instead of remote (creates repo at `~/.local/share/confsync`)  
+- `--git`: Initialize git repo at `~/.local/share/confsync` [default]
 - `--force`: Overwrite existing configuration  
 
 ---
@@ -67,7 +67,7 @@ confsync restore [TARGET] [FLAGS]
 confsync list [FLAGS]  
 ```  
 **Flags**:  
-- `--oneline`: Compact view (commit hash + message)  
+- `--alias`: Shows history for an alias  
 - `--verbose`: Show changed files/aliases  
 
 ---
@@ -124,7 +124,8 @@ confsync config <SUBCOMMAND>
 ## **Global Flags**  
 *(Available for all commands)*  
 - `--verbose`: Show debug logs  
-- `--config-path <PATH>`: Use custom config file  
+- `--paths`: Shows paths used by confsync
+- `--config-path <PATH>`: Use custom config file  [phase 2]
 - `--profile <NAME>`: Override active profile  
 
 ---
