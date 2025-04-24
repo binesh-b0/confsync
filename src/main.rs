@@ -80,15 +80,32 @@ fn main() {
                     Err(e) => eprintln!("Error executing git command: {}", e),
                 }
             }
-            cli::Commands::Backup { alias, message, push, force:_ } => {
-                // if alias is not empty, check its existance
-                let alias = alias.unwrap_or_default();
-                if !alias.is_empty() {
+            cli::Commands::Backup { alias, message, push, force:_ , env } => {
+                if !check_config_exists() {
+                    println!(" Please run `confsync init` to initialize.");
+                    write_log("warn", "BACKUP", "Attempt to backup without config", None).unwrap();
+                    return;
+                }
+                //if env is true, save env variables into a new file in repo
+                if env {
                     if !check_config_exists() {
                         println!(" Please run `confsync init` to initialize.");
                         write_log("warn", "BACKUP", "Attempt to backup without config", None).unwrap();
                         return;
                     }
+                    if let Err(e) = ops::save_env_vars(&profile) {
+                        write_log("error", "BACKUP", &format!("Error saving env vars: {}", e), None).unwrap();
+                        eprintln!("Error saving env vars: {}", e);
+                        return;
+                    } else {
+                        ui::printer("Env saved successfully", ui::MessageType::Success);
+                        write_log("info", "BACKUP", "Env vars saved successfully", None).unwrap();
+                    }
+                }
+                // if alias is not empty, check its existance
+                let alias = alias.unwrap_or_default();
+                if !alias.is_empty() {
+            
                     if !is_tracked(alias.as_str()) {
                         println!("{} not found", alias);
                         write_log("warn", "BACKUP", &format!("{} not found.", alias), None).unwrap();

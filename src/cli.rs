@@ -76,6 +76,10 @@ pub enum Commands {
         #[arg(short, long)]
         force: bool,
 
+        /// Track environmental variables
+        #[arg(long, default_value_t = false,required_unless_present = "alias")]
+        env: bool,
+
     },
 
     /// Restore a configuration file 

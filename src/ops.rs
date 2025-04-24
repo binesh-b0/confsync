@@ -212,3 +212,29 @@ pub fn write_log(
 
     Ok(())
 }
+
+
+/// Save environment variables to a file
+pub fn save_env_vars(profile: &str) -> Result<(), String> {
+    let project_dirs =
+        ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");
+    let env_path = project_dirs.data_dir().join(profile).join("env_vars.txt");
+
+    if let Some(parent) = env_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create env directory: {}", e))?;
+    }
+
+    let mut file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(env_path)
+        .map_err(|e| format!("Failed to open env file: {}", e))?;
+
+    for (key, value) in std::env::vars() {
+        writeln!(file, "{}={}", key, value)
+            .map_err(|e| format!("Failed to write to env file: {}", e))?;
+    }
+
+    Ok(())
+}
