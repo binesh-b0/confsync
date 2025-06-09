@@ -1,5 +1,19 @@
-
 use crate::{config::*, repo, ops::write_log, ui, ops};
+/// Initializes the repository configuration and sets up the repository.
+///
+/// This function sets up the configuration for a repository, optionally using a provided repository URL, force reinitialization flag, and profile selection. If a configuration already exists and `force` is not set, initialization is aborted. The function saves the configuration, initializes the repository, and copies the configuration file into the repository. If `git` is false, the operation is not performed.
+///
+/// # Parameters
+/// - `repo_url`: Optional URL of the repository to initialize. If not provided or empty, a local repository is assumed.
+/// - `git`: If false, initialization is not performed and an error is reported.
+/// - `force`: If true, forces reinitialization even if a configuration already exists.
+/// - `profile`: Optional profile name to use for initialization; defaults to "default" if not provided.
+///
+/// # Examples
+///
+/// ```
+/// handle_init(Some("https://example.com/repo.git".to_string()), true, false, Some("work".to_string()));
+/// ```
 pub fn handle_init(repo_url: Option<String>, git: bool, force: bool, profile: Option<String>) {
     // if not git, print not yet implemented
     if !git {

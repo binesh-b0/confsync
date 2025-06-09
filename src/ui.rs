@@ -132,7 +132,23 @@ pub fn print_table(name: &str, value: &str, style: Option<&str>) {
 //     );
 //     pb.set_message(message);
 //     pb
-// }
+/// Executes a task while displaying a spinner with the provided message.
+///
+/// The spinner animates while the task closure runs. On completion, the spinner is replaced with a green checkmark and the message if successful, or a red cross and the error message if the task fails.
+///
+/// # Parameters
+/// - `message`: The message to display alongside the spinner.
+/// - `task`: A closure that performs the task and returns a `Result`.
+///
+/// # Returns
+/// The result of the task closure.
+///
+/// # Examples
+///
+/// ```
+/// let result = _run_with_spinner("Processing", || Ok(42));
+/// assert_eq!(result, Ok(42));
+/// ```
 
 pub fn _run_with_spinner<F, T>(message: &str, task: F) -> Result<T, String>
 where

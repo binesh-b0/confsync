@@ -114,7 +114,30 @@ pub fn copy_file_to_repo(src: PathBuf, alias: &str, profile: &str, force: bool) 
     Ok(())
 }
 
-/// restore file from repo if content is different
+/// Restores a file from the repository to the specified destination if the contents differ or if forced.
+///
+/// If the backup file does not exist, returns an error. If `force` is false and the destination file is already identical to the backup, the function prints a success message and does nothing. Otherwise, it overwrites the destination file with the backup.
+///
+/// # Parameters
+/// - `dest`: The destination path where the file should be restored.
+/// - `alias`: The alias identifying the backup directory within the profile.
+/// - `profile`: The profile name used to locate the repository.
+/// - `force`: If true, always restores the file even if contents are identical.
+///
+/// # Returns
+/// Returns `Ok(())` if the file is restored or already up to date, or an error string if the operation fails.
+///
+/// # Examples
+///
+/// ```
+/// let result = restore_file(
+///     PathBuf::from("/home/user/.bashrc"),
+///     "bashrc",
+///     "default",
+///     false
+/// );
+/// assert!(result.is_ok());
+/// ```
 pub fn restore_file(dest:PathBuf,alias:&str,profile: &str, force: bool) -> Result<(), String> {
     let project_dirs =
         ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");
@@ -208,7 +231,22 @@ pub fn write_log(
 }
 
 
-/// Save environment variables to a file
+/// Saves all current environment variables to an `env_vars.txt` file in the specified profile's data directory.
+///
+/// Each environment variable is written as a `KEY=VALUE` line. The file is created if it does not exist, and new variables are appended.
+///
+/// # Parameters
+/// - `profile`: The name of the profile whose directory will store the environment variables.
+///
+/// # Returns
+/// Returns `Ok(())` if the environment variables are successfully saved, or an error string if any file operation fails.
+///
+/// # Examples
+///
+/// ```
+/// let result = save_env_vars("default");
+/// assert!(result.is_ok());
+/// ```
 pub fn save_env_vars(profile: &str) -> Result<(), String> {
     let project_dirs =
         ProjectDirs::from("", "", "confsync").expect("Failed to get project directories");

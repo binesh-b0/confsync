@@ -4,6 +4,20 @@ use crate::{repo, ui};
 use crate::ops::write_log;
 use crate::ui::printer;
 
+/// Handles deletion operations for configuration files, local repositories, remote repositories, or all targets based on the specified deletion target and profile.
+///
+/// Enforces the use of a force flag to prevent accidental deletions. Provides user feedback and logs the outcome of each operation, including errors, warnings, and successful deletions.
+///
+/// # Parameters
+/// - `target`: Specifies what to delete (config, local, remote, or all) and whether to force deletion.
+/// - `profile`: The profile context used for repository operations.
+///
+/// # Examples
+///
+/// ```
+/// // Delete the local repository for the "default" profile, forcing deletion.
+/// handle_delete(DeleteTarget::Local { force: true }, "default");
+/// ```
 pub fn handle_delete (target: DeleteTarget, profile: &str) {
     match target {
         DeleteTarget::Config { force } =>{

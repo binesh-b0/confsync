@@ -3,6 +3,16 @@ use std::path::PathBuf;
 use crate::ops::write_log;
 
 
+/// Adds a file to tracking in the configuration system and copies it to the repository.
+///
+/// If the configuration is not initialized, prompts the user to initialize and exits. Resolves the provided file path, adds it to tracking with the given name, and copies it to the repository under the specified profile. Errors are logged and reported to the user as appropriate.
+///
+/// # Examples
+///
+/// ```
+/// handle_add("config.toml".to_string(), "myconfig".to_string(), "default");
+/// // Adds "config.toml" to tracking as "myconfig" and copies it to the repository.
+/// ```
 pub fn handle_add(path: String, name: String, profile: &str) {
        // check if config file exists
        if !crate::config::check_config_exists() {

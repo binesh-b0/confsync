@@ -1,4 +1,3 @@
-
 use clap::{CommandFactory, Parser};
 
 mod cli;
@@ -19,6 +18,20 @@ use ops::{copy_file_to_repo, restore_file, write_log};
 use ui::printer;
 
 
+/// Entry point for the `confsync` command-line application.
+///
+/// Parses command-line arguments, determines the requested operation, and delegates to the appropriate handler. Supports commands for initialization, adding and deleting tracked files, configuration management, backup and restore operations, and listing tracked files or their histories. Handles special flags for displaying version and application paths. Provides user feedback and logs events or errors as needed.
+///
+/// # Examples
+///
+/// ```
+/// // Run the application from the command line:
+/// // $ confsync init --remote <url>
+/// // $ confsync add /path/to/file --name myconfig
+/// // $ confsync backup --alias myconfig
+/// // $ confsync restore --target myconfig
+/// // $ confsync list
+/// ```
 fn main() {
     let cli = Cli::parse();
     // set default profile to "default"

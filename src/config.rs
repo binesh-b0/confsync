@@ -235,7 +235,22 @@ pub fn is_tracked(name: &str) -> bool {
     }
 }
  
-/// Get the path of a tracked file
+/// Returns the file system path associated with a tracked file alias.
+///
+/// # Arguments
+///
+/// * `name` - The alias of the tracked file.
+///
+/// # Returns
+///
+/// Returns `Ok(PathBuf)` with the file path if the alias is found, or an `Err` with a message if the alias is not tracked.
+///
+/// # Examples
+///
+/// ```
+/// let path = get_path_from_alias("confsync").unwrap();
+/// assert!(path.exists());
+/// ```
 pub fn get_path_from_alias(name: &str) -> Result<PathBuf, String> {
     let config = load_config()?;
 
