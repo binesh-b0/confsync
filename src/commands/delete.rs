@@ -1,6 +1,6 @@
 use crate::cli::DeleteTarget;
 use crate::config::{check_config_exists, delete_config};
-use crate::{git, ui};
+use crate::{repo, ui};
 use crate::ops::write_log;
 use crate::ui::printer;
 
@@ -24,7 +24,7 @@ pub fn handle_delete (target: DeleteTarget, profile: &str) {
         },
         DeleteTarget::Local { force } => {
             if force {
-                if let Err(e) = git::delete_repo(true, false, &profile) {
+                if let Err(e) = repo::delete_repo(&profile) {
                     write_log("error", "DELETE", &format!("Error deleting local repo: {}", e), None).unwrap();
                     printer(format!("Error deleting local repo: {}", e).as_str(), ui::MessageType::Error);
                 } else {
@@ -38,7 +38,7 @@ pub fn handle_delete (target: DeleteTarget, profile: &str) {
         },
         DeleteTarget::Remote { force } => {
             if force {
-                if let Err(e) = git::delete_repo(false, true, &profile) {
+                if let Err(e) = repo::delete_repo(&profile) {
                     write_log("error", "DELETE", &format!("Error deleting remote repo: {}", e), None).unwrap();
                     printer(format!("Error deleting remote repo: {}", e).as_str(), ui::MessageType::Error);
                 } else {
@@ -51,7 +51,7 @@ pub fn handle_delete (target: DeleteTarget, profile: &str) {
         },
         DeleteTarget::All { force } => {
             if force {
-                if let Err(e) = git::delete_repo(true, true, &profile) {
+                if let Err(e) = repo::delete_repo(&profile) {
                     write_log("error", "DELETE", &format!("Error deleting everything: {}", e), None).unwrap();
                     printer(format!("Error deleting all repos: {}", e).as_str(), ui::MessageType::Error);
                 } else {

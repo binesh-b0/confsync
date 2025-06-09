@@ -3,7 +3,7 @@ use clap::{CommandFactory, Parser};
 
 mod cli;
 mod config;
-mod git;
+mod repo;
 mod ops;
 mod commands;
 mod ui;
@@ -13,7 +13,7 @@ use commands::add::handle_add;
 
 use cli::{Cli, ConfigCommands};
 use config::{
-    check_config_exists, default_config_path, load_config, view_config, is_tracked
+    check_config_exists, default_config_path, view_config, is_tracked
 };
 use ops::{copy_file_to_repo, restore_file, write_log};
 use ui::printer;
@@ -73,14 +73,10 @@ fn main() {
                     },
                 }
             }
-            cli::Commands::Git { args } => {
-                // Forward the git command to the git CLI
-                match git::git_command(&args.iter().map(String::as_str).collect::<Vec<&str>>()) {
-                    Ok(output) => printer(&output,ui::MessageType::Git),
-                    Err(e) => eprintln!("Error executing git command: {}", e),
-                }
+            cli::Commands::Git { .. } => {
+                printer("Git functionality has been removed", ui::MessageType::Warning);
             }
-            cli::Commands::Backup { alias, message, push, force:_ , env } => {
+            cli::Commands::Backup { alias, message, push: _, force: _, env } => {
                 if !check_config_exists() {
                     println!(" Please run `confsync init` to initialize.");
                     write_log("warn", "BACKUP", "Attempt to backup without config", None).unwrap();
@@ -134,14 +130,13 @@ fn main() {
                     } else {
                         write_log("info", "BACKUP", &format!("File {} copied to repo successfully", alias), None).unwrap();
                     }
-                    // commit the changes
-                    if let Err(e) = git::commit_and_push(&profile, message.as_deref().unwrap_or(&alias), push && !load_config().unwrap().storage.local) {
-                        write_log("error", "BACKUP", &format!("Error committing and pushing: {}", e), None).unwrap();
-                        eprintln!("Error committing and pushing: {}", e);
+                    if let Err(e) = repo::commit(&profile, message.as_deref().unwrap_or(&alias)) {
+                        write_log("error", "BACKUP", &format!("Error recording backup: {}", e), None).unwrap();
+                        eprintln!("Error recording backup: {}", e);
                         return;
                     } else {
                         write_log("info", "BACKUP", "Backup completed successfully", None).unwrap();
-                        printer("DOne", ui::MessageType::Default);
+                        printer("Done", ui::MessageType::Default);
                     }
                     
                 }
