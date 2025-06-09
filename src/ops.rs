@@ -131,8 +131,8 @@ pub fn restore_file(dest:PathBuf,alias:&str,profile: &str, force: bool) -> Resul
     if !src.exists() {
         return Err(format!("File {} not found in backup", src.display()));
     }
-    if force | compare_files(&dest, &src)? {
-        printer(format!("That one is already up to date").as_str(), ui::MessageType::Success);
+    if !force && compare_files(&dest, &src)? {
+        printer("That one is already up to date", ui::MessageType::Success);
         return Ok(());
     }
     fs::copy(src, dest).map_err(|e| format!("Failed to copy file: {}", e))?;

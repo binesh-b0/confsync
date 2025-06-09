@@ -1,5 +1,5 @@
 
-use crate::{config::*, git, ops::write_log, ui, ops};
+use crate::{config::*, repo, ops::write_log, ui, ops};
 pub fn handle_init(repo_url: Option<String>, git: bool, force: bool, profile: Option<String>) {
     // if not git, print not yet implemented
     if !git {
@@ -43,23 +43,14 @@ pub fn handle_init(repo_url: Option<String>, git: bool, force: bool, profile: Op
         write_log("info", "INIT", "Config saved successfully", None).unwrap();
     }
 
-    // Initialize the git repository
-    // if the local is false, use repo_url to add remote
-    let remote_url = if config.storage.local {
-        None
-    } else if !config.storage.repo_url.is_empty() {
-        Some(config.storage.repo_url.as_str())
-    } else {
-        None
-    };
-    match git::init_repo(profile,remote_url) {
+    // Initialize repository
+    match repo::init_repo(profile) {
         Ok(_) => {
-            write_log("info", "INIT", "Git repository initialized successfully", None).unwrap();
-          
+            write_log("info", "INIT", "Repository initialized successfully", None).unwrap();
         },
         Err(e) => {
-            write_log("error", "INIT", &format!("Error initializing git repository: {}", e), None).unwrap();
-            eprintln!("Error initializing git repository: {}", e);
+            write_log("error", "INIT", &format!("Error initializing repository: {}", e), None).unwrap();
+            eprintln!("Error initializing repository: {}", e);
             std::process::exit(1);
         }
     }
